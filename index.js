@@ -2,8 +2,9 @@
 
 const { Pool } = require('pg');
 
-// This function will be executed by Appwrite
-export default async ({ req, res, log, error }) => {
+// THIS IS THE ONLY LINE THAT CHANGED.
+// We are now using module.exports instead of "export default".
+module.exports = async ({ req, res, log, error }) => {
   // Appwrite provides the body as a string, so we need to parse it.
   // We also check if the body is empty or malformed.
   let machineId, key;
@@ -43,7 +44,6 @@ export default async ({ req, res, log, error }) => {
 
     if (rows.length === 0) {
       log(`Invalid key used: ${key}`);
-      // NOTE: Appwrite's res.json() takes the body first, then the status code.
       return res.json({ success: false, message: 'Invalid key.' }, 404);
     }
 
@@ -57,29 +57,21 @@ export default async ({ req, res, log, error }) => {
     }
 
     // 4. Check the machine ID associated with the key
-
-    // SCENARIO A: Key is valid and belongs to this machine.
     if (license.machine_id && license.machine_id === machineId) {
       log(`Successful login for Machine ID: ${machineId}`);
       return res.json({ success: true, message: 'Login successful.' }, 200);
     }
-
-    // SCENARIO B: Key is valid but is already used by another machine.
     if (license.machine_id && license.machine_id !== machineId) {
       log(`Key ${key} is assigned to another machine. Attempted by ${machineId}.`);
       return res.json({ success: false, message: 'Key is already in use by another machine.' }, 403);
     }
-
-    // SCENARIO C: Key is new/unclaimed. Assign it to this machine.
     if (!license.machine_id) {
       const updateQuery = 'UPDATE user_keys SET machine_id = $1 WHERE key_value = $2';
       await pool.query(updateQuery, [machineId, key]);
-      
       log(`Key ${key} has been activated for Machine ID: ${machineId}`);
       return res.json({ success: true, message: 'Key successfully activated. Login successful.' }, 200);
     }
 
-    // Fallback case
     error('Reached an unhandled case in the logic.');
     return res.json({ success: false, message: 'An unexpected error occurred.' }, 500);
 
@@ -87,7 +79,6 @@ export default async ({ req, res, log, error }) => {
     error('Database Error:', dbError.message);
     return res.json({ success: false, message: 'Internal Server Error.' }, 500);
   } finally {
-    // Close the database connection pool
     await pool.end();
   }
 };
