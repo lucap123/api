@@ -7,9 +7,14 @@ module.exports = async ({ req, res, log, error }) => {
 
   // 1. A Machine ID is always required.
   if (!machineId) {
-    log('Missing machineId in request.');
-    return res.json({ success: false, message: 'Machine ID is required.' }, 400);
+    log(`Missing machineId in request. Received: ${JSON.stringify(req.body)}`);
+    return res.json({
+      success: false,
+      message: 'Machine ID is required. Please provide a valid machineId.',
+      received: req.body // Optionally include what was received
+    }, 400);
   }
+
 
   // --- Database Connection ---
   if (!process.env.DATABASE_URL) {
