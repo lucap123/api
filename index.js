@@ -1,21 +1,12 @@
-// src/index.js
+// index.js (Corrected Version)
 
 const { Pool } = require('pg');
 
-// THIS IS THE ONLY LINE THAT CHANGED.
-// We are now using module.exports instead of "export default".
 module.exports = async ({ req, res, log, error }) => {
-  // Appwrite provides the body as a string, so we need to parse it.
-  // We also check if the body is empty or malformed.
-  let machineId, key;
-  try {
-    const body = JSON.parse(req.body);
-    machineId = body.machineId;
-    key = body.key;
-  } catch (e) {
-    error('Invalid JSON body provided.');
-    return res.json({ success: false, message: 'Invalid request body.' }, 400);
-  }
+  // --- THIS IS THE MAIN FIX ---
+  // The Appwrite runtime already parses the JSON for us.
+  // We can directly access the properties from req.body.
+  const { machineId, key } = req.body;
 
   // 1. Basic input validation
   if (!machineId || !key) {
@@ -24,7 +15,6 @@ module.exports = async ({ req, res, log, error }) => {
   }
 
   // --- Database Connection ---
-  // We will get the DATABASE_URL from the function's environment variables.
   if (!process.env.DATABASE_URL) {
     error('DATABASE_URL environment variable is not set.');
     return res.json({ success: false, message: 'Server configuration error.' }, 500);
